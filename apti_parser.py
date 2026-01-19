@@ -172,7 +172,7 @@ class APTiParser:
             return []
 
     async def _fetch_maint_payment(self) -> dict:
-        """관리비 납부액."""
+        """관리비 납부액 및 비교 데이터."""
         try:
             url = f"{self.BASE_URL}/apti/manage/manage_cost.asp?cate_code=AAEB"
             await self._page.goto(url, wait_until="networkidle")
@@ -202,13 +202,98 @@ class APTiParser:
                     if (deadlineElem) result['deadline'] = deadlineElem.textContent.trim();
                     const dayBox = document.querySelector('div.dayBox p');
                     if (dayBox) result['status'] = dayBox.textContent.trim();
+                    
+                    // 비교 데이터 수집
+                    result['comparison'] = {};
+                    
+                    // 전체 페이지에서 비교 데이터 찾기
+                    const allText = document.body.textContent || '';
+                    
+                    // 전년 비교 (전년동월) - ₩317,860 형식 찾기
+                    const prevYearRegex = /전년동월[\\s\\S]{0,100}?[₩원]?[\\s]*([\\d,]+)/;
+                    const prevYearMatch = allText.match(prevYearRegex);
+                    if (prevYearMatch) {
+                        result['comparison']['previous_year'] = prevYearMatch[1].replace(/,/g, '');
+                    }
+                    
+                    // 우리아파트 동일면적 비교 - 최저, 평균 찾기
+                    const sameAreaSection = document.querySelector('*:contains("우리아파트"), *:contains("동일면적")');
+                    if (!sameAreaSection) {
+                        // 텍스트 기반으로 찾기
+                        const sameAreaRegex = /우리아파트[\\s\\S]{0,200}?동일면적[\\s\\S]{0,500}?최저[\\s\\S]{0,50}?[₩원]?[\\s]*([\\d,]+)[\\s\\S]{0,100}?평균[\\s\\S]{0,50}?[₩원]?[\\s]*([\\d,]+)/;
+                        const sameAreaMatch = allText.match(sameAreaRegex);
+                        if (sameAreaMatch) {
+                            result['comparison']['same_area_lowest'] = sameAreaMatch[1].replace(/,/g, '');
+                            result['comparison']['same_area_average'] = sameAreaMatch[2].replace(/,/g, '');
+                        }
+                    }
+                    
+                    // 에너지사용량 동일면적 비교
+                    const energyRegex = /에너지[\\s\\S]{0,100}?동일면적[\\s\\S]{0,500}?최저[\\s\\S]{0,50}?[₩원]?[\\s]*([\\d,]+)[\\s\\S]{0,100}?평균[\\s\\S]{0,50}?[₩원]?[\\s]*([\\d,]+)/;
+                    const energyMatch = allText.match(energyRegex);
+                    if (energyMatch) {
+                        result['comparison']['energy_same_area_lowest'] = energyMatch[1].replace(/,/g, '');
+                        result['comparison']['energy_same_area_average'] = energyMatch[2].replace(/,/g, '');
+                    }
+                    
+                    // 더 정확한 방법: 특정 클래스나 ID를 가진 요소 찾기
+                    const compareCards = document.querySelectorAll('div.card, div.compare-card, div[class*="compare"], div[class*="comparison"]');
+                    compareCards.forEach(card => {
+                        const cardHTML = card.innerHTML || '';
+                        const cardText = card.textContent || '';
+                        
+                        // 전년 비교 카드
+                        if (cardText.includes('전년') || cardText.includes('전년동월')) {
+                            const amounts = cardText.match(/[₩원]?[\\s]*([\\d,]+)/g);
+                            if (amounts && amounts.length > 0) {
+                                // 첫 번째 금액이 전년동월 금액일 가능성
+                                const amount = amounts[0].replace(/[^\\d]/g, '');
+                                if (amount && amount.length >= 5 && !result['comparison']['previous_year']) {
+                                    result['comparison']['previous_year'] = amount;
+                                }
+                            }
+                        }
+                        
+                        // 동일면적 비교 카드
+                        if (cardText.includes('동일면적') && cardText.includes('우리아파트')) {
+                            const amounts = cardText.match(/[₩원]?[\\s]*([\\d,]+)/g);
+                            if (amounts && amounts.length >= 2) {
+                                // 최저와 평균 찾기
+                                const lowestMatch = cardText.match(/최저[\\s\\S]{0,50}?[₩원]?[\\s]*([\\d,]+)/);
+                                const avgMatch = cardText.match(/평균[\\s\\S]{0,50}?[₩원]?[\\s]*([\\d,]+)/);
+                                if (lowestMatch) {
+                                    result['comparison']['same_area_lowest'] = lowestMatch[1].replace(/,/g, '');
+                                }
+                                if (avgMatch) {
+                                    result['comparison']['same_area_average'] = avgMatch[1].replace(/,/g, '');
+                                }
+                            }
+                        }
+                        
+                        // 에너지 비교 카드
+                        if (cardText.includes('에너지') && cardText.includes('동일면적')) {
+                            const lowestMatch = cardText.match(/최저[\\s\\S]{0,50}?[₩원]?[\\s]*([\\d,]+)/);
+                            const avgMatch = cardText.match(/평균[\\s\\S]{0,50}?[₩원]?[\\s]*([\\d,]+)/);
+                            if (lowestMatch) {
+                                result['comparison']['energy_same_area_lowest'] = lowestMatch[1].replace(/,/g, '');
+                            }
+                            if (avgMatch) {
+                                result['comparison']['energy_same_area_average'] = avgMatch[1].replace(/,/g, '');
+                            }
+                        }
+                    });
+                    
                     return result;
                 }
             """)
             print(f"관리비 납부액: {payment.get('amount', 'N/A')}원")
+            if payment.get('comparison'):
+                print(f"비교 데이터: {payment.get('comparison')}")
             return payment
         except Exception as e:
             print(f"관리비 납부액 오류: {e}")
+            import traceback
+            traceback.print_exc()
             return {}
 
     async def _fetch_energy_category(self) -> list:
