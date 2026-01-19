@@ -1,109 +1,83 @@
-# APT.i 데이터 수집 및 Notion 전송
+# APT.i 관리비 명세서 자동 수집 및 Notion 대시보드 생성
 
-APT.i (아파트아이) 관리비 정보를 자동으로 수집하여 Notion Database에 저장하는 프로젝트입니다.
+아파트아이(APT.i)의 관리비 명세서를 자동으로 크롤링하여, 사용자의 Notion 데이터베이스에 시각화된 대시보드를 자동으로 생성해주는 프로젝트입니다.
 
 ## 주요 기능
 
-- **자동 데이터 수집**: GitHub Actions를 통해 매일 자동으로 APT.i 사이트에서 데이터 수집
-- **Notion 연동**: 수집한 데이터를 Notion Database에 자동 저장
-- **상세 데이터 저장**: 모든 관리비 항목, 에너지 정보, 납부내역을 테이블 형식으로 저장
-- **월별 필터링**: 월별로 데이터를 쉽게 조회할 수 있는 속성 제공
-- **중복 방지**: 같은 날짜의 데이터는 자동으로 업데이트
+- **자동 데이터 수집**: Playwright를 사용하여 APT.i 사이트에서 관리비 정보 자동 수집
+- **Notion 대시보드 생성**: 수집한 데이터를 시각화된 대시보드 형식으로 Notion 페이지에 자동 생성
+- **중복 방지**: 같은 월의 데이터는 자동으로 업데이트
+- **상세 분석**: 관리비 항목별 증감, 에너지 사용량 비교, 납부 이력 등 제공
 
-## 작동 방식
+## 1. Notion 데이터베이스 준비
 
-```
-GitHub Actions (매일 자동 실행)
-    ↓ Playwright로 APT.i 사이트 파싱
-    ↓
-데이터 수집 (관리비, 에너지, 납부내역)
-    ↓
-Notion Database에 페이지 생성/업데이트
-    ↓
-테이블 및 구조화된 형식으로 저장
-```
+### 데이터베이스 생성
 
-## 수집되는 데이터
+1. Notion에서 새 페이지 생성
+2. `/database inline` 명령어로 인라인 데이터베이스 생성
+3. 또는 기존 데이터베이스 사용 (예: `https://www.notion.so/2eda8076a34780f682cacc2b1dd91150`)
 
-### 전체 데이터 구조
+### 데이터베이스 속성 설정
 
-```json
-{
-  "timestamp": "2026-01-18T09:00:00.000000",
-  "dong_ho": "13061001",
-  "maint_items": [...],
-  "maint_payment": {...},
-  "energy_category": [...],
-  "energy_type": [...],
-  "payment_history": [...]
-}
-```
+다음 속성들을 추가/수정합니다:
 
-### 상세 데이터
+| 속성명 | 유형 | 설명 |
+|--------|------|------|
+| **이름** (Name) | Title | 페이지 제목 (자동 생성: "YYYY년 M월 관리비") |
+| **동호수** | Text | 아파트 동호수 (예: "1306동 1001호") |
+| **청구월** | Select | 부과 월 (1월~12월) |
+| **총 납부액** | Number | 관리비 총액 (원) |
+| **💧 수도요금** | Number | 수도 요금 (원) |
+| **🔥 난방/가스** | Number | 난방/가스 요금 (원) |
+| **⚡ 전기요금** | Number | 전기 요금 (원) |
+| **수집일시** | Date | 데이터 수집 일시 |
+| **납부기한** | Date | 납부 마감일 |
 
-1. **기본 정보**
-   - `timestamp`: 데이터 수집 시간 (ISO 형식)
-   - `dong_ho`: 동호 정보 (8자리 숫자, 예: "13061001" = 1306동 1001호)
+> **참고**: 현재 데이터베이스에는 위 속성들이 이미 설정되어 있습니다. 필요에 따라 추가 속성(상태, 태그 등)을 추가할 수 있습니다.
 
-2. **관리비 항목** (`maint_items`)
-   - 각 항목별: 항목명, 이번 달 금액, 전월 금액, 증감액
-   - 예: 일반관리비, 청소비, 수선유지비 등
+### [중요] Notion API 통합(Integration) 연결
 
-3. **관리비 납부액** (`maint_payment`)
-   - 납부할 총액, 부과 금액, 부과 월, 납부 마감일, 납부 상태
+1. **Notion My Integrations**에서 새 통합 생성
+   - https://www.notion.so/my-integrations 접속
+   - "New integration" 클릭
+   - 이름 입력 (예: "APT.i Collector")
+   - "Submit" 클릭
 
-4. **에너지 카테고리** (`energy_category`)
-   - 전기, 가스, 수도, 난방 등
-   - 각각: 사용량, 요금, 전월 대비 비교
+2. **Internal Integration Secret (토큰) 복사**
+   - 생성된 통합 페이지에서 "Internal Integration Token" 복사
+   - 형식: `secret_...`
 
-5. **에너지 종류별 상세** (`energy_type`)
-   - 각 에너지 종류별 상세 요금 내역
-   - 예: 세대전기료, 기본요금, 전력량요금 등
+3. **데이터베이스에 통합 연결**
+   - 노션 데이터베이스 페이지 우측 상단 `...` 메뉴 클릭
+   - "연결" (Connections) 선택
+   - 만든 통합 선택하여 초대
 
-6. **납부내역** (`payment_history`)
-   - 결제일, 금액, 청구월, 마감일, 은행, 결제 방법, 납부 상태
+## 2. 환경 변수 설정
 
-## 설치 및 설정
+### 로컬 실행 시 (.env 파일 또는 환경 변수)
 
-### 1. 저장소 클론
+프로젝트 폴더에 `.env` 파일을 만들거나, 환경 변수로 다음 값을 설정하세요:
 
 ```bash
-git clone https://github.com/kong9365/Apt_i.git
-cd Apt_i
+# 아파트아이 계정 정보
+APTI_USER_ID="아이디_또는_휴대폰번호"
+APTI_PASSWORD="비밀번호"
+
+# Notion API 정보
+NOTION_TOKEN="secret_..."  # 위에서 발급받은 시크릿 키
+NOTION_DATABASE_ID="2eda8076a34780f682cacc2b1dd91150"  # 공유해주신 링크의 ID
 ```
 
-### 2. Notion Database 생성
+### Windows PowerShell에서 환경 변수 설정
 
-1. Notion에서 새 Database 생성 (또는 기존 Database 사용)
-2. 다음 속성들을 추가:
-   - **Name** (Title): 페이지 제목 (자동 생성)
-   - **날짜** (Date): 데이터 수집 날짜
-   - **동호** (Text): 동호 정보
-   - **월** (Select): 부과 월 (1월~12월)
-   - **관리비 총액** (Number): 관리비 총액
-   - **부과 금액** (Number): 부과 금액
-   - **납부 마감일** (Text): 납부 마감일
-   - **납부 상태** (Text): 납부 상태
-   - **관리비 항목 수** (Number): 관리비 항목 개수
-   - **에너지 카테고리 수** (Number): 에너지 카테고리 개수
-   - **납부내역 수** (Number): 납부내역 개수
+```powershell
+$env:APTI_USER_ID="01045439365"
+$env:APTI_PASSWORD="your_password"
+$env:NOTION_TOKEN="secret_..."
+$env:NOTION_DATABASE_ID="2eda8076a34780f682cacc2b1dd91150"
+```
 
-3. Database ID 확인:
-   - Database URL에서 ID 추출
-   - 예: `https://www.notion.so/workspace/abc123def456...`
-   - ID는 `abc123def456...` 부분
-
-### 3. Notion Integration 생성
-
-1. https://www.notion.so/my-integrations 접속
-2. "New integration" 클릭
-3. 이름 입력 (예: "APT.i Collector")
-4. Integration Token 복사
-5. 생성한 Database에 Integration 연결:
-   - Database 우측 상단 "..." 메뉴
-   - "Connections" → Integration 선택
-
-### 4. GitHub Secrets 설정
+### GitHub Actions 사용 시 (Secrets 설정)
 
 저장소 Settings → Secrets and variables → Actions → New repository secret
 
@@ -114,11 +88,72 @@ cd Apt_i
 | `NOTION_TOKEN` | Notion Integration Token | `secret_...` 형식 |
 | `NOTION_DATABASE_ID` | Notion Database ID | Database URL에서 추출한 ID |
 
-### 5. GitHub Actions 실행
+## 3. 실행 방법
+
+### 로컬 실행
+
+```bash
+# 1. 의존성 설치
+pip install -r requirements.txt
+playwright install chromium
+
+# 2. 환경 변수 설정 (위 참고)
+
+# 3. 실행
+python main.py
+```
+
+### GitHub Actions 자동 실행
 
 1. 저장소 → Actions 탭
 2. "APT.i 데이터 수집 및 Notion 전송" 워크플로우 선택
 3. "Run workflow" 클릭하여 수동 실행 테스트
+4. 자동 실행은 `.github/workflows/parse.yml`의 스케줄에 따라 실행됩니다
+
+## 4. 결과 확인
+
+실행이 완료되면 노션 데이터베이스에 다음과 같은 페이지가 생성됩니다:
+
+### 페이지 제목
+- **제목**: `2025년 11월 관리비` (예시)
+
+### 페이지 속성 (데이터베이스 컬럼)
+- 동호수: 1306동 1001호
+- 청구월: 11월
+- 총 납부액: 347,220원
+- 💧 수도요금: 22,480원
+- 🔥 난방/가스: 76,380원
+- ⚡ 전기요금: 35,010원
+- 수집일시: 2026-01-19
+- 납부기한: 2025-12-31
+
+### 페이지 내용 (대시보드)
+
+#### 🚨 요약 및 연간 월별 추이
+- 동호 정보 및 이번 달 납부 금액
+- 납부 마감일
+- 전년동월 비교 데이터
+- 우리아파트 동일면적 비교 (최저/평균)
+- 에너지사용량 동일면적 비교
+- 연간 월별 추이 테이블 (12개월)
+
+#### 📑 관리비 상세 내역
+- 관리비 항목별 상세 표
+  - 관리 항목 (일반관리비, 청소비, 소독비 등)
+  - 당월 금액
+  - 전월 금액
+  - 증감 (🔺 증가, 🔽 감소 표시)
+
+#### 📊 에너지 상세 분석
+- **에너지별 요약** (왼쪽 컬럼)
+  - 전기, 온수, 수도, 난방 등
+  - 사용량, 청구액, 전월대비 비교
+- **상세 요금 산정 내역** (오른쪽 컬럼)
+  - 각 에너지 종류별 상세 요금 내역
+
+#### 💳 납부 이력
+- 최근 6개월 납부 내역 (토글 블록)
+  - 결제일, 금액, 청구월, 마감일, 은행, 방법, 상태
 
 ## 프로젝트 구조
 
@@ -127,92 +162,88 @@ apti/
 ├── .github/
 │   └── workflows/
 │       └── parse.yml          # GitHub Actions 워크플로우
-├── apti_parser.py            # APT.i 데이터 파서
-├── notion_sender.py         # Notion 전송 모듈
-├── main.py                  # 메인 스크립트
-├── requirements.txt         # Python 의존성
-├── README.md               # 프로젝트 설명
+├── apti_parser.py            # APT.i 데이터 파서 (Playwright)
+├── notion_sender.py          # Notion 대시보드 생성 모듈
+├── main.py                    # 메인 스크립트
+├── run_parser.py           # 파서 테스트용 스크립트 (JSON 저장)
+├── requirements.txt           # Python 의존성
+├── README.md                  # 프로젝트 설명
 └── .gitignore
 ```
 
-## 로컬 테스트
+## 수집되는 데이터
 
-```bash
-# 의존성 설치
-pip install -r requirements.txt
-playwright install chromium
+### 전체 데이터 구조
 
-# 환경 변수 설정
-export APTI_USER_ID="your_id"
-export APTI_PASSWORD="your_password"
-export NOTION_TOKEN="secret_..."
-export NOTION_DATABASE_ID="database_id"
-
-# 실행
-python main.py
+```json
+{
+  "timestamp": "2026-01-19T13:09:22.206384",
+  "dong_ho": "13061001",
+  "maint_items": [
+    {
+      "item": "일반관리비",
+      "current": "49950",
+      "previous": "49780",
+      "change": "170"
+    },
+    ...
+  ],
+  "maint_payment": {
+    "amount": "347220",
+    "charged": "347220",
+    "month": "11",
+    "deadline": "2025년 12월 31일",
+    "status": "납기후",
+    "comparison": {
+      "previous_year": "347220",
+      "same_area_lowest": "...",
+      "same_area_average": "..."
+    }
+  },
+  "energy_category": [
+    {
+      "type": "전기",
+      "usage": "232.00",
+      "cost": "35010",
+      "comparison": "우리집이 평균 요금보다 21,234원 적게 사용했습니다."
+    },
+    ...
+  ],
+  "energy_type": [],
+  "payment_history": [
+    {
+      "date": "2025.12.24",
+      "amount": "347220",
+      "billing_month": "2025.11",
+      "deadline": "2025.12.31",
+      "bank": "현대카드",
+      "method": "신용카드자동이체",
+      "status": "납부완료"
+    },
+    ...
+  ]
+}
 ```
 
-## Notion Database 스키마
+## 문제 해결
 
-### Database 속성
+### 파싱 실패
+1. APT.i 자격증명 확인
+2. 사이트 구조 변경 여부 확인
+3. Playwright 브라우저 설치 확인: `playwright install chromium`
+4. 로그 확인: 터미널 출력 또는 GitHub Actions 로그
 
-| 속성명 | 타입 | 설명 |
-|--------|------|------|
-| Name | Title | 페이지 제목 (날짜 + 동호) |
-| 날짜 | Date | 데이터 수집 날짜 |
-| 동호 | Text | 아파트 동호수 |
-| 월 | Select | 부과 월 (1월~12월) |
-| 관리비 총액 | Number | 관리비 총액 (원) |
-| 부과 금액 | Number | 부과 금액 (원) |
-| 납부 마감일 | Text | 납부 마감일 |
-| 납부 상태 | Text | 납부 상태 (납기내, 납기경과 등) |
-| 관리비 항목 수 | Number | 관리비 항목 개수 |
-| 에너지 카테고리 수 | Number | 에너지 카테고리 개수 |
-| 납부내역 수 | Number | 납부내역 개수 |
+### Notion 전송 실패
+1. Notion Integration Token 확인
+2. Database ID 확인 (URL에서 추출)
+3. Database에 Integration이 연결되어 있는지 확인
+4. Database 속성명이 코드와 일치하는지 확인
+5. Notion API 권한 확인 (읽기/쓰기 권한 필요)
 
-### 페이지 내용
-
-각 페이지에는 다음 섹션이 테이블 및 구조화된 형식으로 자동 추가됩니다:
-
-1. **📊 기본 정보**: 동호, 수집 시간, 관리비 총액, 부과 금액, 납부 마감일, 납부 상태
-2. **💰 관리비 항목**: 항목명, 이번 달, 전월, 증감을 테이블로 표시
-3. **⚡ 에너지 카테고리**: 종류, 사용량, 요금, 전월 대비를 테이블로 표시
-4. **🔋 에너지 종류별 상세**: 각 에너지 종류별 상세 요금 내역
-5. **💳 납부내역**: 결제일, 금액, 청구월, 마감일, 은행, 방법, 상태를 테이블로 표시
-6. **📄 원본 데이터 (JSON)**: 전체 원본 데이터를 JSON 형식으로 저장 (디버깅용)
-
-## 월별 뷰 설정
-
-Notion Database에서 월별로 데이터를 보기 좋게 정리하는 방법:
-
-### 방법 1: Database 뷰 생성
-
-1. Database 상단의 "Add a view" 클릭
-2. 뷰 이름 입력 (예: "1월", "2월" 등)
-3. 필터 추가:
-   - Property: **월**
-   - Condition: **Is**
-   - Value: **1월** (또는 원하는 월)
-4. 정렬 추가 (선택사항):
-   - Property: **날짜**
-   - Direction: **Descending** (최신순)
-
-### 방법 2: 별도 페이지에 Database 연결
-
-1. 별도 페이지 생성 (예: `https://www.notion.so/2026-...`)
-2. Database를 해당 페이지에 연결:
-   - `/` 입력 후 Database 선택
-   - 또는 Database를 드래그하여 페이지에 추가
-3. 연결된 Database에 필터 적용:
-   - Database 상단 "Filter" 클릭
-   - **월** 속성으로 필터링
-4. 각 월별로 별도 뷰 생성하여 정리
-
-### 방법 3: 월별 그룹화
-
-1. Database 뷰에서 "Group by" 클릭
-2. Property: **월** 선택
-3. 각 월별로 그룹화된 뷰 확인
+### 환경 변수 오류
+- Windows PowerShell: `$env:변수명="값"` 형식 사용
+- Linux/Mac: `export 변수명="값"` 형식 사용
+- `.env` 파일 사용 시: `python-dotenv` 패키지 필요
 
 ## 스케줄 변경
 
@@ -222,19 +253,6 @@ Notion Database에서 월별로 데이터를 보기 좋게 정리하는 방법:
 schedule:
   - cron: '0 12 * * *'  # 매일 한국시간 오후 9시 (UTC 12시)
 ```
-
-## 문제 해결
-
-### 파싱 실패
-1. APT.i 자격증명 확인
-2. 사이트 구조 변경 여부 확인
-3. GitHub Actions 로그 확인
-
-### Notion 전송 실패
-1. Notion Integration Token 확인
-2. Database ID 확인
-3. Database에 Integration이 연결되어 있는지 확인
-4. Database 속성명이 코드와 일치하는지 확인
 
 ## 라이선스
 
