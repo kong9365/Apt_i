@@ -224,6 +224,31 @@ class NotionSender:
             report_text = f"🏠 {dong_ho_str} 관리비 리포트 ({month_str}분)\n\n"
             report_text += f"이번 달 납부하실 금액은 **{self.format_currency(maint_amount)}원**이며, 마감일은 **{maint_deadline}**입니다."
             
+            # 비교 데이터 추가
+            comparison = maint_payment.get("comparison", {})
+            if comparison:
+                report_text += "\n\n**📊 비교 데이터:**\n"
+                
+                if comparison.get("previous_year"):
+                    prev_year = self.format_currency(comparison["previous_year"])
+                    diff = maint_amount_int - int(comparison.get("previous_year", 0))
+                    diff_str = f"+{self.format_currency(abs(diff))}" if diff >= 0 else f"-{self.format_currency(abs(diff))}"
+                    report_text += f"• 전년동월: {prev_year}원 (차이: {diff_str}원)\n"
+                
+                if comparison.get("same_area_lowest") or comparison.get("same_area_average"):
+                    report_text += "• 우리아파트 동일면적 비교:\n"
+                    if comparison.get("same_area_lowest"):
+                        report_text += f"  - 최저: {self.format_currency(comparison['same_area_lowest'])}원\n"
+                    if comparison.get("same_area_average"):
+                        report_text += f"  - 평균: {self.format_currency(comparison['same_area_average'])}원\n"
+                
+                if comparison.get("energy_same_area_lowest") or comparison.get("energy_same_area_average"):
+                    report_text += "• 에너지사용량 동일면적 비교:\n"
+                    if comparison.get("energy_same_area_lowest"):
+                        report_text += f"  - 최저: {self.format_currency(comparison['energy_same_area_lowest'])}원\n"
+                    if comparison.get("energy_same_area_average"):
+                        report_text += f"  - 평균: {self.format_currency(comparison['energy_same_area_average'])}원\n"
+            
             children.append({
                 "object": "block",
                 "type": "paragraph",
