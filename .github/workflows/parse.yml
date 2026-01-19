@@ -1,0 +1,36 @@
+name: APT.i 데이터 수집 및 Notion 전송
+
+on:
+  # 매일 한국시간 오전 9시 (UTC 0시)
+  schedule:
+    - cron: '0 0 * * *'
+
+  # 수동 실행
+  workflow_dispatch:
+
+jobs:
+  collect-and-send:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Python 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 의존성 설치
+        run: |
+          pip install -r requirements.txt
+          playwright install chromium
+          playwright install-deps chromium
+
+      - name: APT.i 데이터 수집 및 Notion 전송
+        env:
+          APTI_USER_ID: ${{ secrets.APTI_USER_ID }}
+          APTI_PASSWORD: ${{ secrets.APTI_PASSWORD }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+        run: python main.py
