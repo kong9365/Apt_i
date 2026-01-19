@@ -390,17 +390,16 @@ class NotionSender:
             detail_col1 = left_column_items
             detail_col2 = right_column_items
             
-            # 토글 내부에 2-컬럼 레이아웃 배치
-            toggle_children = [{
-                "object": "block",
-                "type": "column_list",
-                "column_list": {
-                    "children": [
-                        {"object": "block", "type": "column", "column": {"children": detail_col1}},
-                        {"object": "block", "type": "column", "column": {"children": detail_col2}}
-                    ]
-                }
-            }]
+            # 토글 내부에 직접 callout 블록들을 나열
+            # Notion API가 toggle 내부의 column_list를 지원하지 않으므로
+            # 모든 항목을 순서대로 나열 (왼쪽 컬럼 먼저, 그 다음 오른쪽 컬럼)
+            toggle_children = []
+            max_len = max(len(detail_col1), len(detail_col2))
+            for i in range(max_len):
+                if i < len(detail_col1):
+                    toggle_children.append(detail_col1[i])
+                if i < len(detail_col2):
+                    toggle_children.append(detail_col2[i])
             
             children.append({
                 "object": "block",
