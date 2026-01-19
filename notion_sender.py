@@ -258,76 +258,7 @@ class NotionSender:
 
             children.append(header_callout)
 
-            # 3.2 Detailed Fee Table (Table Block)
-            children.append({
-                "object": "block",
-                "type": "heading_2",
-                "heading_2": {"rich_text": [{"text": {"content": "📑 명세서 상세 항목"}}]}
-            })
-
-            # 항목 정렬: 증감 절댓값 기준 내림차순
-            sorted_items = sorted(
-                maint_items, 
-                key=lambda x: abs(self.parse_int(x.get("change", 0))), 
-                reverse=True
-            )
-
-            table_rows = [
-                {
-                    "object": "block",
-                    "type": "table_row",
-                    "table_row": {
-                        "cells": [
-                            [{"type": "text", "text": {"content": "항목명"}}],
-                            [{"type": "text", "text": {"content": "당월 금액"}}],
-                            [{"type": "text", "text": {"content": "전월 대비 증감"}}]
-                        ]
-                    }
-                }
-            ]
-
-            for item in sorted_items:
-                name = item.get("item", "")
-                curr = self.parse_int(item.get("current", 0))
-                change = self.parse_int(item.get("change", 0))
-                
-                # Trend Display Logic
-                if change > 0:
-                    trend_text = f"🔺 +{self.format_currency(change)}원"
-                    trend_color = "red"
-                elif change < 0:
-                    trend_text = f"🔽 {self.format_currency(change)}원"
-                    trend_color = "blue"
-                else:
-                    trend_text = "-"
-                    trend_color = "gray"
-
-                table_rows.append({
-                    "object": "block",
-                    "type": "table_row",
-                    "table_row": {
-                        "cells": [
-                            [{"type": "text", "text": {"content": name}}],
-                            [{"type": "text", "text": {"content": f"{self.format_currency(curr)}원"}}],
-                            [{"type": "text", "text": {"content": trend_text}, "annotations": {"color": trend_color}}]
-                        ]
-                    }
-                })
-
-            children.append({
-                "object": "block",
-                "type": "table",
-                "table": {
-                    "table_width": 3,
-                    "has_column_header": True,
-                    "has_row_header": False,
-                    "children": table_rows
-                }
-            })
-            
-            children.append({"object": "block", "type": "divider", "divider": {}})
-
-            # 3.3 Energy & Comparison (2-Column Layout)
+            # 3.2 Energy & Comparison (2-Column Layout) - 맨 위로 이동
             # Column 1: Usage & Cost
             col1_children = [
                 {"object": "block", "type": "heading_3", "heading_3": {"rich_text": [{"text": {"content": "⚡ 에너지 및 주요 지출"}}]}}
@@ -389,6 +320,97 @@ class NotionSender:
                 }
             })
 
+            children.append({"object": "block", "type": "divider", "divider": {}})
+
+            # 3.3 Detailed Fee Table (Toggle Block) - 중앙에 위치, 가로 2열 레이아웃
+            # 항목 정렬: 당월 금액 기준 내림차순
+            sorted_items = sorted(
+                maint_items, 
+                key=lambda x: self.parse_int(x.get("current", 0)), 
+                reverse=True
+            )
+
+            # 가로 2열로 항목 분할
+            left_column_items = []
+            right_column_items = []
+            
+            for i, item in enumerate(sorted_items):
+                name = item.get("item", "")
+                curr = self.parse_int(item.get("current", 0))
+                change = self.parse_int(item.get("change", 0))
+                
+                # Trend Display Logic
+                if change > 0:
+                    trend_text = f"🔺 +{self.format_currency(change)}원"
+                    trend_color = "red"
+                elif change < 0:
+                    trend_text = f"🔽 {self.format_currency(change)}원"
+                    trend_color = "blue"
+                else:
+                    trend_text = "-"
+                    trend_color = "gray"
+                
+                # 항목 정보를 Callout 형식으로 구성
+                item_block = {
+                    "object": "block",
+                    "type": "callout",
+                    "callout": {
+                        "icon": {"emoji": "💰"},
+                        "color": "gray_background",
+                        "rich_text": [
+                            {
+                                "type": "text",
+                                "text": {"content": f"{name}\n"},
+                                "annotations": {"bold": True}
+                            },
+                            {
+                                "type": "text",
+                                "text": {"content": f"당월: {self.format_currency(curr)}원\n"}
+                            },
+                            {
+                                "type": "text",
+                                "text": {"content": f"증감: "}
+                            },
+                            {
+                                "type": "text",
+                                "text": {"content": trend_text},
+                                "annotations": {"color": trend_color}
+                            }
+                        ]
+                    }
+                }
+                
+                # 짝수 인덱스는 왼쪽, 홀수 인덱스는 오른쪽
+                if i % 2 == 0:
+                    left_column_items.append(item_block)
+                else:
+                    right_column_items.append(item_block)
+            
+            # 2-컬럼 레이아웃 생성
+            detail_col1 = left_column_items
+            detail_col2 = right_column_items
+            
+            # 토글 내부에 2-컬럼 레이아웃 배치
+            toggle_children = [{
+                "object": "block",
+                "type": "column_list",
+                "column_list": {
+                    "children": [
+                        {"object": "block", "type": "column", "column": {"children": detail_col1}},
+                        {"object": "block", "type": "column", "column": {"children": detail_col2}}
+                    ]
+                }
+            }]
+            
+            children.append({
+                "object": "block",
+                "type": "toggle",
+                "toggle": {
+                    "rich_text": [{"type": "text", "text": {"content": "📑 명세서 상세 항목"}}],
+                    "children": toggle_children
+                }
+            })
+            
             children.append({"object": "block", "type": "divider", "divider": {}})
 
             # 3.4 Archive (Toggle Blocks)

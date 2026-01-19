@@ -118,6 +118,7 @@ class APTiParser:
             # 2. 관리비 항목 & 납부액
             print("관리비 정보 수집 중...")
             await self._page.goto(f"{self.BASE_URL}/apti/manage/manage_cost.asp?cate_code=AAEB", wait_until="networkidle")
+            await asyncio.sleep(2)  # 페이지 로딩 대기
             
             # 납부액 및 기본 정보
             data["maint_payment"] = await self._page.evaluate("""() => {
@@ -142,7 +143,33 @@ class APTiParser:
                 return res;
             }""")
 
-            # 상세 항목 리스트
+            # 더보기 버튼 2번 클릭하여 모든 항목 로드
+            print("더보기 버튼 클릭 중...")
+            for i in range(2):
+                try:
+                    # 더보기 버튼 찾기 및 클릭
+                    more_button_clicked = await self._page.evaluate("""() => {
+                        const moreBtn = document.querySelector('a[onclick*="ajaxTempData"][alt="더보기"]');
+                        if (moreBtn) {
+                            moreBtn.click();
+                            return true;
+                        }
+                        return false;
+                    }""")
+                    
+                    if more_button_clicked:
+                        print(f"더보기 버튼 클릭 {i+1}회 완료")
+                        await asyncio.sleep(2)  # 데이터 로딩 대기
+                    else:
+                        print(f"더보기 버튼을 찾을 수 없습니다 (클릭 {i+1}회 시도)")
+                        break
+                except Exception as e:
+                    print(f"더보기 버튼 클릭 중 오류: {e}")
+                    break
+            
+            await asyncio.sleep(1)  # 최종 로딩 대기
+
+            # 상세 항목 리스트 (모든 항목 파싱)
             data["maint_items"] = await self._page.evaluate("""() => {
                 const items = [];
                 document.querySelectorAll('a.black').forEach(link => {
