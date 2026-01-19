@@ -142,6 +142,7 @@ class NotionSender:
             
             # --- 2. 페이지 속성 (Properties) 설정 ---
             # 실제 데이터베이스 속성에 맞춰 설정
+            # 속성 순서: Name -> 청구월 -> 동호수 -> 총 납부액 -> 난방 -> 수도 -> 전기 -> 납부기한 -> 수집일시
             properties = {
                 "Name": {
                     "title": [
@@ -153,24 +154,6 @@ class NotionSender:
                 }
             }
             
-            # 필수 속성 추가
-            properties["총 납부액"] = {"number": amount}
-            
-            # 날짜 속성 (notion-client 형식)
-            properties["수집일시"] = {
-                "date": {
-                    "start": date_obj.strftime("%Y-%m-%dT%H:%M:%S")
-                }
-            }
-            
-            deadline_date = self.parse_date(deadline_str)
-            if deadline_date:
-                properties["납부기한"] = {
-                    "date": {
-                        "start": deadline_date
-                    }
-                }
-
             # 청구월
             try:
                 month_num_int = int(month_str)
@@ -180,20 +163,39 @@ class NotionSender:
                     }
             except (ValueError, TypeError):
                 pass
-
-            # 에너지 요금
-            if energy_costs["전기"] > 0:
-                properties["⚡ 전기요금"] = {"number": energy_costs["전기"]}
-            if energy_costs["수도"] > 0:
-                properties["💧 수도요금"] = {"number": energy_costs["수도"]}
-            if energy_costs["난방"] > 0 or energy_costs["가스"] > 0:
-                properties["🔥 난방/가스"] = {"number": energy_costs["난방"] + energy_costs["가스"]}
-
+            
             # 동호수
             if dong_ho_str:
                 properties["동호수"] = {
                     "rich_text": [{"type": "text", "text": {"content": dong_ho_str}}]
                 }
+            
+            # 총 납부액
+            properties["총 납부액"] = {"number": amount}
+            
+            # 에너지 요금 (난방 -> 수도 -> 전기 순서)
+            if energy_costs["난방"] > 0 or energy_costs["가스"] > 0:
+                properties["🔥 난방/가스"] = {"number": energy_costs["난방"] + energy_costs["가스"]}
+            if energy_costs["수도"] > 0:
+                properties["💧 수도요금"] = {"number": energy_costs["수도"]}
+            if energy_costs["전기"] > 0:
+                properties["⚡ 전기요금"] = {"number": energy_costs["전기"]}
+            
+            # 납부기한
+            deadline_date = self.parse_date(deadline_str)
+            if deadline_date:
+                properties["납부기한"] = {
+                    "date": {
+                        "start": deadline_date
+                    }
+                }
+            
+            # 수집일시
+            properties["수집일시"] = {
+                "date": {
+                    "start": date_obj.strftime("%Y-%m-%dT%H:%M:%S")
+                }
+            }
 
             # --- 3. 페이지 본문 (Block) 구성 ---
             children = []
@@ -316,8 +318,6 @@ class NotionSender:
                     "children": [
                         {"object": "block", "type": "column", "column": {"children": col1_children}},
                         {"object": "block", "type": "column", "column": {"children": col2_children}}
-                    ]
-                }
             })
 
             children.append({"object": "block", "type": "divider", "divider": {}})
