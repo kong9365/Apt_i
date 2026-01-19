@@ -1,4 +1,4 @@
-"""Notion Dashboard Generator - 아파트 관리비 원장."""
+"""Notion Dashboard Generator - 아파트 관리비 원장 (Full-Detail)."""
 
 import json
 from datetime import datetime
@@ -31,13 +31,10 @@ class NotionSender:
         try:
             # 다양한 날짜 형식 처리
             if "." in date_str:
-                # "2026.01.25" 형식
                 date_str = date_str.replace(".", "-")
             elif "/" in date_str:
-                # "2026/01/25" 형식
                 date_str = date_str.replace("/", "-")
             
-            # ISO 형식으로 변환 시도
             if "T" in date_str:
                 date_obj = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
             else:
@@ -59,7 +56,7 @@ class NotionSender:
             return {"name": "납기내"}
 
     def extract_energy_costs(self, energy_category: list[dict]) -> dict[str, int]:
-        """에너지 카테고리에서 전기/수도/난방 요금 추출."""
+        """에너지 카테고리에서 전기/수도/가스/난방 요금 추출."""
         costs = {"전기": 0, "수도": 0, "난방": 0, "가스": 0}
         
         for energy in energy_category:
@@ -81,6 +78,46 @@ class NotionSender:
                 costs["가스"] = cost
         
         return costs
+
+    def get_annual_trend_data(self, current_month: int, current_amount: int) -> list[dict]:
+        """연간 월별 추이 데이터 생성 (현재는 현재 월만 표시, 향후 DB에서 이전 데이터 조회 가능)."""
+        months = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"]
+        
+        # 월 헤더 행
+        month_row = {
+            "object": "block",
+            "type": "table_row",
+            "table_row": {
+                "cells": [[{"type": "text", "text": {"content": month}}] for month in months]
+            }
+        }
+        
+        # 금액 행
+        amount_cells = []
+        for i, month in enumerate(months, 1):
+            if i == current_month:
+                # 현재 월: 볼드 처리
+                amount_cells.append([{
+                    "type": "text",
+                    "text": {"content": f"{self.format_currency(current_amount)}원"},
+                    "annotations": {"bold": True}
+                }])
+            elif i < current_month:
+                # 과거 월: "-" (향후 DB에서 조회 가능)
+                amount_cells.append([{"type": "text", "text": {"content": "-"}}])
+            else:
+                # 미래 월: "-"
+                amount_cells.append([{"type": "text", "text": {"content": "-"}}])
+        
+        amount_row = {
+            "object": "block",
+            "type": "table_row",
+            "table_row": {
+                "cells": amount_cells
+            }
+        }
+        
+        return [month_row, amount_row]
 
     def create_dashboard_page(self, data: dict[str, Any]) -> bool:
         """대시보드 형식의 Notion 페이지 생성."""
@@ -108,7 +145,11 @@ class NotionSender:
 
             # 페이지 제목 (YYYY년 M월 관리비)
             year = date_obj.year
-            month_str = f"{int(maint_month)}월" if maint_month else date_obj.strftime("%-m월")
+            try:
+                month_num = int(maint_month) if maint_month else date_obj.month
+            except:
+                month_num = date_obj.month
+            month_str = f"{month_num}월"
             page_title = f"{year}년 {month_str} 관리비"
 
             # 에너지 요금 추출
@@ -127,10 +168,10 @@ class NotionSender:
             # 청구월
             if maint_month:
                 try:
-                    month_num = int(maint_month)
-                    if 1 <= month_num <= 12:
+                    month_num_int = int(maint_month)
+                    if 1 <= month_num_int <= 12:
                         properties["청구월"] = {
-                            "select": {"name": f"{month_num}월"}
+                            "select": {"name": f"{month_num_int}월"}
                         }
                 except (ValueError, TypeError):
                     pass
@@ -170,40 +211,66 @@ class NotionSender:
             # 페이지 내용 구성
             children = []
 
-            # 1. Header Section (Callout Block)
-            callout_text = f"이번 달 관리비: **{self.format_currency(maint_amount)}원**\n"
-            callout_text += f"납부 마감일은 **{maint_deadline}**까지 입니다. (상태: {maint_status})"
-            
+            # 1. 🚨 요약 및 연간 월별 추이
             children.append({
                 "object": "block",
-                "type": "callout",
-                "callout": {
-                    "rich_text": [
-                        {
-                            "type": "text",
-                            "text": {"content": callout_text},
-                            "annotations": {
-                                "bold": False
-                            }
-                        }
-                    ],
-                    "icon": {"emoji": "💡"},
-                    "color": "gray_background"
+                "type": "heading_2",
+                "heading_2": {
+                    "rich_text": [{"text": {"content": "🚨 요약 및 연간 월별 추이"}}]
                 }
             })
 
-            # 2. Main Body (Column List Block)
-            column_list_children = []
-
-            # Left Column: Management Fee Details
-            left_column_blocks = []
+            # 리포트 헤더
+            report_text = f"🏠 {dong_ho_str} 관리비 리포트 ({month_str}분)\n\n"
+            report_text += f"이번 달 납부하실 금액은 **{self.format_currency(maint_amount)}원**이며, 마감일은 **{maint_deadline}**입니다."
             
-            # Heading
-            left_column_blocks.append({
+            children.append({
+                "object": "block",
+                "type": "paragraph",
+                "paragraph": {
+                    "rich_text": [
+                        {
+                            "type": "text",
+                            "text": {"content": report_text}
+                        }
+                    ]
+                }
+            })
+
+            # Annual Trend Table
+            children.append({
                 "object": "block",
                 "type": "heading_3",
                 "heading_3": {
-                    "rich_text": [{"text": {"content": "📋 관리비 세부 내역"}}]
+                    "rich_text": [{"text": {"content": "연간 월별 추이"}}]
+                }
+            })
+
+            trend_rows = self.get_annual_trend_data(month_num, maint_amount_int)
+            children.append({
+                "object": "block",
+                "type": "table",
+                "table": {
+                    "table_width": 12,
+                    "has_column_header": True,
+                    "has_row_header": False,
+                    "children": trend_rows
+                }
+            })
+
+            # Divider
+            children.append({
+                "object": "block",
+                "type": "divider",
+                "divider": {}
+            })
+
+            # 2. 📋 관리비 상세 명세
+            children.append({
+                "object": "block",
+                "type": "heading_2",
+                "heading_2": {
+                    "rich_text": [{"text": {"content": "📑 관리비 상세 내역"}}]
                 }
             })
 
@@ -215,7 +282,7 @@ class NotionSender:
                     "type": "table_row",
                     "table_row": {
                         "cells": [
-                            [{"type": "text", "text": {"content": "항목"}}],
+                            [{"type": "text", "text": {"content": "관리 항목"}}],
                             [{"type": "text", "text": {"content": "당월 금액"}}],
                             [{"type": "text", "text": {"content": "전월 금액"}}],
                             [{"type": "text", "text": {"content": "증감"}}]
@@ -227,6 +294,7 @@ class NotionSender:
             total_current = 0
             total_previous = 0
 
+            # 모든 항목 반복 (누락 없이)
             for item in maint_items:
                 item_name = item.get("item", "")
                 current = item.get("current", "0")
@@ -249,11 +317,11 @@ class NotionSender:
                     change_text = f"🔺 {self.format_currency(change_int)}"
                     change_annotations = {"color": "red"}
                 elif change_int < 0:
-                    change_text = f"▼ {self.format_currency(abs(change_int))}"
+                    change_text = f"🔽 {self.format_currency(abs(change_int))}"
                     change_annotations = {"color": "blue"}
                 else:
                     change_text = "-"
-                    change_annotations = {}
+                    change_annotations = {"color": "gray"}
 
                 table_rows.append({
                     "object": "block",
@@ -282,7 +350,7 @@ class NotionSender:
                 }
             })
 
-            left_column_blocks.append({
+            children.append({
                 "object": "block",
                 "type": "table",
                 "table": {
@@ -293,19 +361,35 @@ class NotionSender:
                 }
             })
 
-            # Right Column: Energy Analysis
-            right_column_blocks = []
-
-            # Heading
-            right_column_blocks.append({
+            # Divider
+            children.append({
                 "object": "block",
-                "type": "heading_3",
-                "heading_3": {
-                    "rich_text": [{"text": {"content": "📊 에너지 사용량 분석"}}]
+                "type": "divider",
+                "divider": {}
+            })
+
+            # 3. ⚡ 에너지 사용 및 상세 분석
+            children.append({
+                "object": "block",
+                "type": "heading_2",
+                "heading_2": {
+                    "rich_text": [{"text": {"content": "📊 에너지 상세 분석"}}]
                 }
             })
 
-            # Energy Category Content
+            # Column List (2 columns)
+            column_list_children = []
+
+            # Left Column: Category Summary
+            left_column_blocks = []
+            left_column_blocks.append({
+                "object": "block",
+                "type": "heading_3",
+                "heading_3": {
+                    "rich_text": [{"text": {"content": "에너지별 요약"}}]
+                }
+            })
+
             for energy in energy_category:
                 energy_type = energy.get("type", "")
                 usage = energy.get("usage", "0")
@@ -313,7 +397,7 @@ class NotionSender:
                 comparison = energy.get("comparison", "")
 
                 # Energy Type (Bold)
-                right_column_blocks.append({
+                left_column_blocks.append({
                     "object": "block",
                     "type": "paragraph",
                     "paragraph": {
@@ -328,10 +412,21 @@ class NotionSender:
                 })
 
                 # Bulleted List
-                bullet_items = [
-                    f"사용량: {usage}",
-                    f"청구액: {self.format_currency(cost)}원"
-                ]
+                left_column_blocks.append({
+                    "object": "block",
+                    "type": "bulleted_list_item",
+                    "bulleted_list_item": {
+                        "rich_text": [{"type": "text", "text": {"content": f"사용량: {usage}"}}]
+                    }
+                })
+
+                left_column_blocks.append({
+                    "object": "block",
+                    "type": "bulleted_list_item",
+                    "bulleted_list_item": {
+                        "rich_text": [{"type": "text", "text": {"content": f"청구액: {self.format_currency(cost)}원"}}]
+                    }
+                })
 
                 # 전월대비 색상 적용
                 if comparison:
@@ -342,38 +437,108 @@ class NotionSender:
                     else:
                         comparison_color = "default"
                     
-                    bullet_items.append({
-                        "text": f"전월대비: {comparison}",
-                        "color": comparison_color
+                    left_column_blocks.append({
+                        "object": "block",
+                        "type": "bulleted_list_item",
+                        "bulleted_list_item": {
+                            "rich_text": [
+                                {
+                                    "type": "text",
+                                    "text": {"content": f"전월대비: {comparison}"},
+                                    "annotations": {"color": comparison_color}
+                                }
+                            ]
+                        }
                     })
                 else:
-                    bullet_items.append(f"전월대비: -")
-
-                for item in bullet_items:
-                    if isinstance(item, dict):
-                        right_column_blocks.append({
-                            "object": "block",
-                            "type": "bulleted_list_item",
-                            "bulleted_list_item": {
-                                "rich_text": [
-                                    {
-                                        "type": "text",
-                                        "text": {"content": item["text"]},
-                                        "annotations": {"color": item["color"]}
-                                    }
-                                ]
-                            }
-                        })
-                    else:
-                        right_column_blocks.append({
-                            "object": "block",
-                            "type": "bulleted_list_item",
-                            "bulleted_list_item": {
-                                "rich_text": [{"type": "text", "text": {"content": item}}]
-                            }
-                        })
+                    left_column_blocks.append({
+                        "object": "block",
+                        "type": "bulleted_list_item",
+                        "bulleted_list_item": {
+                            "rich_text": [{"type": "text", "text": {"content": "전월대비: -"}}]
+                        }
+                    })
 
                 # Spacing
+                left_column_blocks.append({
+                    "object": "block",
+                    "type": "paragraph",
+                    "paragraph": {
+                        "rich_text": [{"type": "text", "text": {"content": ""}}]
+                    }
+                })
+
+            # Right Column: Technical Breakdown
+            right_column_blocks = []
+            right_column_blocks.append({
+                "object": "block",
+                "type": "heading_3",
+                "heading_3": {
+                    "rich_text": [{"text": {"content": "상세 요금 산정 내역"}}]
+                }
+            })
+
+            energy_type = data.get("energy_type", [])
+            for energy in energy_type:
+                energy_type_name = energy.get("type", "")
+                total = energy.get("total", "0")
+                comparison = energy.get("comparison", "")
+                
+                try:
+                    total_int = int(total)
+                except (ValueError, TypeError):
+                    total_int = 0
+                
+                # Energy Type Heading
+                right_column_blocks.append({
+                    "object": "block",
+                    "type": "heading_4",
+                    "heading_4": {
+                        "rich_text": [{"text": {"content": f"{energy_type_name} (총 {self.format_currency(total_int)}원, {comparison})"}}]
+                    }
+                })
+                
+                # Sub-fields as bulleted list
+                for key, value in energy.items():
+                    if key not in ["type", "total", "comparison"]:
+                        try:
+                            value_int = int(value)
+                            right_column_blocks.append({
+                                "object": "block",
+                                "type": "bulleted_list_item",
+                                "bulleted_list_item": {
+                                    "rich_text": [
+                                        {
+                                            "type": "text",
+                                            "text": {"content": f"{key}: "}
+                                        },
+                                        {
+                                            "type": "text",
+                                            "text": {"content": f"{self.format_currency(value_int)}원"},
+                                            "annotations": {"bold": True}
+                                        }
+                                    ]
+                                }
+                            })
+                        except (ValueError, TypeError):
+                            right_column_blocks.append({
+                                "object": "block",
+                                "type": "bulleted_list_item",
+                                "bulleted_list_item": {
+                                    "rich_text": [
+                                        {
+                                            "type": "text",
+                                            "text": {"content": f"{key}: "}
+                                        },
+                                        {
+                                            "type": "text",
+                                            "text": {"content": str(value)},
+                                            "annotations": {"bold": True}
+                                        }
+                                    ]
+                                }
+                            })
+                
                 right_column_blocks.append({
                     "object": "block",
                     "type": "paragraph",
@@ -407,77 +572,52 @@ class NotionSender:
                 }
             })
 
-            # 3. Footer Details (Toggle Blocks)
+            # Divider
+            children.append({
+                "object": "block",
+                "type": "divider",
+                "divider": {}
+            })
 
-            # Toggle 1: 에너지 상세 요금 내역
-            energy_type = data.get("energy_type", [])
-            if energy_type:
-                energy_toggle_children = []
-                
-                for energy in energy_type:
-                    energy_type_name = energy.get("type", "")
-                    total = energy.get("total", "0")
-                    comparison = energy.get("comparison", "")
-                    
-                    try:
-                        total_int = int(total)
-                    except (ValueError, TypeError):
-                        total_int = 0
-                    
-                    # Energy Type Heading
-                    energy_toggle_children.append({
-                        "object": "block",
-                        "type": "heading_4",
-                        "heading_4": {
-                            "rich_text": [{"text": {"content": f"{energy_type_name} (총 {self.format_currency(total_int)}원, {comparison})"}}]
-                        }
-                    })
-                    
-                    # Sub-fields as bulleted list
-                    detail_items = []
-                    for key, value in energy.items():
-                        if key not in ["type", "total", "comparison"]:
-                            try:
-                                value_int = int(value)
-                                detail_items.append(f"• {key}: {self.format_currency(value_int)}원")
-                            except (ValueError, TypeError):
-                                detail_items.append(f"• {key}: {value}")
-                    
-                    if detail_items:
-                        for item in detail_items:
-                            energy_toggle_children.append({
-                                "object": "block",
-                                "type": "bulleted_list_item",
-                                "bulleted_list_item": {
-                                    "rich_text": [{"type": "text", "text": {"content": item}}]
-                                }
-                            })
-                    
-                    energy_toggle_children.append({
-                        "object": "block",
-                        "type": "paragraph",
-                        "paragraph": {
-                            "rich_text": [{"type": "text", "text": {"content": ""}}]
-                        }
-                    })
-                
-                children.append({
-                    "object": "block",
-                    "type": "toggle",
-                    "toggle": {
-                        "rich_text": [{"type": "text", "text": {"content": "▶️ 에너지 상세 요금 내역"}}],
-                        "children": energy_toggle_children
-                    }
-                })
+            # 4. 📂 납부 이력
+            children.append({
+                "object": "block",
+                "type": "heading_2",
+                "heading_2": {
+                    "rich_text": [{"text": {"content": "💳 납부 이력"}}]
+                }
+            })
 
-            # Toggle 2: 납부 처리 이력
             payment_history = data.get("payment_history", [])
             if payment_history:
-                payment_toggle_children = []
+                # Toggle Block
+                toggle_children = []
                 
-                for payment in payment_history:
+                # Table inside toggle
+                history_table_rows = [
+                    {
+                        "object": "block",
+                        "type": "table_row",
+                        "table_row": {
+                            "cells": [
+                                [{"type": "text", "text": {"content": "결제일"}}],
+                                [{"type": "text", "text": {"content": "금액"}}],
+                                [{"type": "text", "text": {"content": "청구월"}}],
+                                [{"type": "text", "text": {"content": "마감일"}}],
+                                [{"type": "text", "text": {"content": "은행"}}],
+                                [{"type": "text", "text": {"content": "방법"}}],
+                                [{"type": "text", "text": {"content": "상태"}}]
+                            ]
+                        }
+                    }
+                ]
+
+                # 최근 6개월만 표시
+                for payment in payment_history[:6]:
                     date = payment.get("date", "")
                     amount = payment.get("amount", "0")
+                    billing_month = payment.get("billing_month", "")
+                    deadline = payment.get("deadline", "")
                     bank = payment.get("bank", "")
                     method = payment.get("method", "")
                     status = payment.get("status", "")
@@ -487,23 +627,47 @@ class NotionSender:
                     except (ValueError, TypeError):
                         amount_int = 0
                     
-                    payment_text = f"{date} | {self.format_currency(amount_int)}원 | {bank} ({method}) | {status}"
+                    # 상태 색상
+                    if status in ["완납", "완료", "결제완료"]:
+                        status_annotations = {"color": "blue"}
+                    elif status in ["미납", "미결제"]:
+                        status_annotations = {"color": "red"}
+                    else:
+                        status_annotations = {}
                     
-                    payment_toggle_children.append({
+                    history_table_rows.append({
                         "object": "block",
-                        "type": "to_do",
-                        "to_do": {
-                            "rich_text": [{"type": "text", "text": {"content": payment_text}}],
-                            "checked": status in ["완납", "완료", "결제완료"]
+                        "type": "table_row",
+                        "table_row": {
+                            "cells": [
+                                [{"type": "text", "text": {"content": date}}],
+                                [{"type": "text", "text": {"content": f"{self.format_currency(amount_int)}원"}}],
+                                [{"type": "text", "text": {"content": billing_month}}],
+                                [{"type": "text", "text": {"content": deadline}}],
+                                [{"type": "text", "text": {"content": bank}}],
+                                [{"type": "text", "text": {"content": method}}],
+                                [{"type": "text", "text": {"content": status}, "annotations": status_annotations}]
+                            ]
                         }
                     })
-                
+
+                toggle_children.append({
+                    "object": "block",
+                    "type": "table",
+                    "table": {
+                        "table_width": 7,
+                        "has_column_header": True,
+                        "has_row_header": False,
+                        "children": history_table_rows
+                    }
+                })
+
                 children.append({
                     "object": "block",
                     "type": "toggle",
                     "toggle": {
-                        "rich_text": [{"type": "text", "text": {"content": "▶️ 납부 처리 이력"}}],
-                        "children": payment_toggle_children
+                        "rich_text": [{"type": "text", "text": {"content": "최근 6개월 납부 내역 확인하기"}}],
+                        "children": toggle_children
                     }
                 })
 
