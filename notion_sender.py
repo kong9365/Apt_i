@@ -154,12 +154,12 @@ class NotionSender:
                 }
             }
             
-            # 청구월
+            # 청구월 (number 타입)
             try:
                 month_num_int = int(month_str)
                 if 1 <= month_num_int <= 12:
                     properties["청구월"] = {
-                        "select": {"name": f"{month_num_int}월"}
+                        "number": month_num_int
                     }
             except (ValueError, TypeError):
                 pass
