@@ -9,7 +9,6 @@
 - **중복 방지**: 같은 월의 데이터는 자동으로 업데이트
 - **상세 분석**: 관리비 항목별 증감, 에너지 사용량 비교, 납부 이력 등 제공
 - **전체 항목 수집**: 더보기 버튼 자동 클릭으로 모든 관리비 항목(24개) 수집
-- **차트 대시보드**: 별도 대시보드 페이지 생성으로 데이터 시각화 용이
 
 ## 1. Notion 데이터베이스 준비
 
@@ -68,11 +67,6 @@ APTI_PASSWORD="비밀번호"
 # Notion API 정보
 NOTION_TOKEN="secret_..."  # 위에서 발급받은 시크릿 키
 NOTION_DATABASE_ID="2eda8076a34780f682cacc2b1dd91150"  # 공유해주신 링크의 ID
-
-# 차트 대시보드 페이지 생성 (선택)
-NOTION_PARENT_PAGE_ID="2eda8076a34780f682cacc2b1dd91150"  # 부모 페이지 ID
-CREATE_DASHBOARD="true"  # 대시보드 생성 여부
-NOTION_CHART_VIEW_ID="view_id_here"  # 차트 보기 ID (선택, 차트 생성 후)
 ```
 
 ### Windows PowerShell에서 환경 변수 설정
@@ -82,11 +76,6 @@ $env:APTI_USER_ID="01045439365"
 $env:APTI_PASSWORD="your_password"
 $env:NOTION_TOKEN="secret_..."
 $env:NOTION_DATABASE_ID="2eda8076a34780f682cacc2b1dd91150"
-
-# 차트 대시보드 페이지 생성 (선택)
-$env:NOTION_PARENT_PAGE_ID="2eda8076a34780f682cacc2b1dd91150"  # 부모 페이지 ID
-$env:CREATE_DASHBOARD="true"  # 대시보드 생성 여부
-$env:NOTION_CHART_VIEW_ID="view_id_here"  # 차트 보기 ID (선택, 차트 생성 후)
 ```
 
 ### GitHub Actions 사용 시 (Secrets 설정)
@@ -99,9 +88,6 @@ $env:NOTION_CHART_VIEW_ID="view_id_here"  # 차트 보기 ID (선택, 차트 생
 | `APTI_PASSWORD` | APT.i 비밀번호 | APT.i 비밀번호 |
 | `NOTION_TOKEN` | Notion Integration Token | `secret_...` 형식 |
 | `NOTION_DATABASE_ID` | Notion Database ID | Database URL에서 추출한 ID |
-| `NOTION_PARENT_PAGE_ID` | 부모 페이지 ID (선택) | 대시보드 페이지 생성 시 필요 |
-| `CREATE_DASHBOARD` | 대시보드 생성 여부 (선택) | `true` 또는 `false` (기본: `false`) |
-| `NOTION_CHART_VIEW_ID` | 차트 보기 ID (선택) | 차트 생성 후 view ID |
 
 ## 3. 실행 방법
 
@@ -171,38 +157,6 @@ python main.py
 
 #### 📎 고지서 원본 (토글 블록)
 - 전체 원본 JSON 데이터
-
-## 5. 차트 대시보드 페이지 생성 (선택)
-
-별도 대시보드 페이지를 생성하여 데이터베이스의 차트 보기로 쉽게 이동할 수 있습니다.
-
-### 환경 변수 설정
-
-```powershell
-# 부모 페이지 ID (대시보드가 생성될 위치)
-$env:NOTION_PARENT_PAGE_ID="2eda8076a34780f682cacc2b1dd91150"
-
-# 대시보드 생성 활성화
-$env:CREATE_DASHBOARD="true"
-
-# 차트 보기 ID (선택, 차트 생성 후 URL에서 추출)
-$env:NOTION_CHART_VIEW_ID="view_id_here"
-```
-
-### 차트 생성 방법
-
-1. 데이터베이스 페이지에서 `+` 버튼 클릭
-2. "차트" 선택
-3. 원하는 차트 타입 선택 (도넛, 막대, 꺾은선)
-4. 차트 URL에서 view ID 추출 (예: `?v=39292555-560e-4be3-b646-795667514f8a`)
-5. `NOTION_CHART_VIEW_ID` 환경 변수에 view ID 설정
-
-### 대시보드 페이지 구성
-
-생성된 대시보드 페이지에는 다음이 포함됩니다:
-- 📈 차트 보기 링크 (데이터베이스 임베드 및 직접 링크)
-- 📋 데이터베이스 보기 링크
-- 💡 차트 생성 가이드
 
 ## 프로젝트 구조
 

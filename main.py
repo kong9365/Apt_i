@@ -15,8 +15,6 @@ async def main():
     password = os.environ.get("APTI_PASSWORD")
     notion_token = os.environ.get("NOTION_TOKEN")
     notion_db_id = os.environ.get("NOTION_DATABASE_ID")
-    notion_parent_page_id = os.environ.get("NOTION_PARENT_PAGE_ID")  # 대시보드 페이지 부모 (선택)
-    create_dashboard = os.environ.get("CREATE_DASHBOARD", "false").lower() == "true"  # 대시보드 생성 여부
 
     if not all([user_id, password, notion_token, notion_db_id]):
         print("필수 환경 변수가 누락되었습니다.")
@@ -42,24 +40,15 @@ async def main():
 
     # 3. Notion 전송
     print("\nNotion 대시보드 생성 시작...")
-    sender = NotionSender(notion_token, notion_db_id, parent_page_id=notion_parent_page_id)
+    sender = NotionSender(notion_token, notion_db_id)
     success = sender.update_or_create_page(data)
 
-    if not success:
+    if success:
+        print("모든 작업이 성공적으로 완료되었습니다!")
+        sys.exit(0)
+    else:
         print("Notion 전송 실패")
         sys.exit(1)
-    
-    # 4. 차트 대시보드 페이지 생성 (옵션)
-    if create_dashboard and notion_parent_page_id:
-        print("\n차트 대시보드 페이지 생성 시작...")
-        dashboard_success = sender.create_chart_dashboard_page()
-        if dashboard_success:
-            print("차트 대시보드 페이지 생성 완료!")
-        else:
-            print("차트 대시보드 페이지 생성 실패 (계속 진행)")
-
-    print("모든 작업이 성공적으로 완료되었습니다!")
-    sys.exit(0)
 
 
 if __name__ == "__main__":
