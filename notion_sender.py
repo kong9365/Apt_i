@@ -10,13 +10,14 @@ from notion_client import Client
 class NotionSender:
     """Notion Database에 디자인된 대시보드 형식으로 데이터를 전송하는 클래스."""
 
-    def __init__(self, token: str, database_id: str) -> None:
+    def __init__(self, token: str, database_id: str, parent_page_id: str | None = None) -> None:
         """초기화."""
         import httpx
         # SSL 인증서 검증 우회 (회사 네트워크 환경 대응)
         client = httpx.Client(verify=False)
         self.notion = Client(auth=token, client=client)
         self.database_id = database_id
+        self.parent_page_id = parent_page_id  # 대시보드 페이지 생성 시 부모 페이지 ID
 
     def format_currency(self, amount: str | int) -> str:
         """금액 포맷팅 (콤마 추가)."""
@@ -540,6 +541,159 @@ class NotionSender:
 
         except Exception as e:
             print(f"Error creating page: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+
+    def create_chart_dashboard_page(self) -> bool:
+        """차트 대시보드 페이지 생성 (데이터베이스 링크 및 차트 보기 링크 포함)."""
+        try:
+            if not self.parent_page_id:
+                print("대시보드 페이지 생성을 위해 부모 페이지 ID가 필요합니다.")
+                return False
+            
+            # 데이터베이스 URL 생성
+            database_url = f"https://www.notion.so/{self.database_id.replace('-', '')}"
+            
+            # 차트 보기 URL (환경 변수에서 가져오거나 기본 URL 사용)
+            import os
+            chart_view_id = os.environ.get("NOTION_CHART_VIEW_ID", "")
+            if chart_view_id:
+                # view ID가 있으면 차트 보기 URL 생성
+                chart_url = f"{database_url}?v={chart_view_id}"
+            else:
+                # 없으면 기본 데이터베이스 URL 사용 (사용자가 수동으로 차트 생성 필요)
+                chart_url = database_url
+            
+            # 대시보드 페이지 내용 구성
+            children = [
+                {
+                    "object": "block",
+                    "type": "heading_1",
+                    "heading_1": {
+                        "rich_text": [{"type": "text", "text": {"content": "📊 관리비 데이터 대시보드"}}]
+                    }
+                },
+                {
+                    "object": "block",
+                    "type": "paragraph",
+                    "paragraph": {
+                        "rich_text": [
+                            {"type": "text", "text": {"content": "이 페이지에서 관리비 데이터를 시각화하고 분석할 수 있습니다."}}
+                        ]
+                    }
+                },
+                {
+                    "object": "block",
+                    "type": "divider",
+                    "divider": {}
+                },
+                {
+                    "object": "block",
+                    "type": "heading_2",
+                    "heading_2": {
+                        "rich_text": [{"type": "text", "text": {"content": "📈 차트 보기"}}]
+                    }
+                },
+                {
+                    "object": "block",
+                    "type": "paragraph",
+                    "paragraph": {
+                        "rich_text": [
+                            {"type": "text", "text": {"content": "아래 링크를 클릭하여 데이터베이스의 차트 보기로 이동하세요:"}}
+                        ]
+                    }
+                },
+                {
+                    "object": "block",
+                    "type": "link_to_page",
+                    "link_to_page": {
+                        "type": "database_id",
+                        "database_id": self.database_id
+                    }
+                },
+                {
+                    "object": "block",
+                    "type": "paragraph",
+                    "paragraph": {
+                        "rich_text": [
+                            {"type": "text", "text": {"content": "또는 직접 링크: "}},
+                            {
+                                "type": "text",
+                                "text": {
+                                    "content": "차트 보기로 이동",
+                                    "link": {"url": chart_url}
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "object": "block",
+                    "type": "divider",
+                    "divider": {}
+                },
+                {
+                    "object": "block",
+                    "type": "heading_2",
+                    "heading_2": {
+                        "rich_text": [{"type": "text", "text": {"content": "📋 데이터베이스 보기"}}]
+                    }
+                },
+                {
+                    "object": "block",
+                    "type": "paragraph",
+                    "paragraph": {
+                        "rich_text": [
+                            {"type": "text", "text": {"content": "전체 데이터베이스를 보려면 아래 링크를 클릭하세요:"}}
+                        ]
+                    }
+                },
+                {
+                    "object": "block",
+                    "type": "bookmark",
+                    "bookmark": {
+                        "url": database_url,
+                        "caption": []
+                    }
+                },
+                {
+                    "object": "block",
+                    "type": "callout",
+                    "callout": {
+                        "icon": {"emoji": "💡"},
+                        "color": "blue_background",
+                        "rich_text": [
+                            {
+                                "type": "text",
+                                "text": {
+                                    "content": "차트를 생성하려면 데이터베이스 페이지에서 '+' 버튼을 클릭하고 '차트'를 선택하세요."
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+            
+            # 대시보드 페이지 생성
+            response = self.notion.pages.create(
+                parent={"page_id": self.parent_page_id},
+                properties={
+                    "title": [
+                        {
+                            "type": "text",
+                            "text": {"content": "📊 관리비 데이터 대시보드"}
+                        }
+                    ]
+                },
+                children=children
+            )
+            
+            print(f"대시보드 페이지 생성 완료: {response.get('url')}")
+            return True
+            
+        except Exception as e:
+            print(f"대시보드 페이지 생성 오류: {e}")
             import traceback
             traceback.print_exc()
             return False
