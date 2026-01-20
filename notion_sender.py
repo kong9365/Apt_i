@@ -318,6 +318,8 @@ class NotionSender:
                     "children": [
                         {"object": "block", "type": "column", "column": {"children": col1_children}},
                         {"object": "block", "type": "column", "column": {"children": col2_children}}
+                    ]
+                }
             })
 
             children.append({"object": "block", "type": "divider", "divider": {}})
