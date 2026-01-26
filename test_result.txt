@@ -1,0 +1,274 @@
+﻿python : Traceback (most recent call last):
+위치 C:\Users\user\AppData\Local\Temp\ps-script-17188b4f-a65c-4bbd-a2cc-6da16d826087.ps1:89 문자:142
++ ... !"; $env:PYTHONIOENCODING="utf-8"; python test_parser.py 2>&1 | Out-F ...
++                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "C:\Users\user\Desktop\Coding\cusor\apti\apti_parser.py", line 217, in _fetch_maint_payment
+    payment = await self._page.evaluate("""
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<106 lines>...
+    """)
+    ^^^^
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\site-packages\playwright\async_api\_generated.py", li
+ne 8514, in evaluate
+    await self._impl_obj.evaluate(
+        expression=expression, arg=mapping.to_impl(arg)
+    )
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\site-packages\playwright\_impl\_page.py", line 467, i
+n evaluate
+    return await self._main_frame.evaluate(expression, arg)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\site-packages\playwright\_impl\_frame.py", line 320, 
+in evaluate
+    await self._channel.send(
+    ...<6 lines>...
+    )
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\site-packages\playwright\_impl\_connection.py", line 
+69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\site-packages\playwright\_impl\_connection.py", line 
+559, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.Error: Page.evaluate: SyntaxError: Failed to execute 'querySelector' on 'Document': '*:contain
+s("?곕━?꾪뙆??), *:contains("?숈씪硫댁쟻")' is not a valid selector.
+    at eval (eval at evaluate (:290:30), <anonymous>:39:54)
+    at UtilityScript.evaluate (<anonymous>:297:18)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+=== APT.i ?곗씠???섏쭛 ?쒖옉 ===
+
+濡쒓렇???쒖옉...
+濡쒓렇????URL: https://xn--3-v85erd9xh0vctai95f4a637hvqbda945jmkaw30h.apti.co.kr/aptHome/Default.asp?
+濡쒓렇??荑좏궎 諛쒓껄: se%5Ftoken
+濡쒓렇???깃났!
+?곗씠???섏쭛 ?쒖옉...
+?숉샇 ?뺣낫 ?섏쭛 以?..
+?숉샇: 13061001
+愿由щ퉬 ??ぉ ?섏쭛 以?..
+愿由щ퉬 ??ぉ: 10媛?
+愿由щ퉬 ?⑸????섏쭛 以?..
+愿由щ퉬 ?⑸????ㅻ쪟: Page.evaluate: SyntaxError: Failed to execute 'querySelector' on 'Document': '*:contains("?곕━?꾪뙆??), *:contains("?숈씪硫댁쟻")' is not a valid selector.
+    at eval (eval at evaluate (:290:30), <anonymous>:39:54)
+    at UtilityScript.evaluate (<anonymous>:297:18)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+?먮꼫吏 移댄뀒怨좊━ ?섏쭛 以?..
+?먮꼫吏 移댄뀒怨좊━: 4媛?
+?먮꼫吏 醫낅쪟蹂??섏쭛 以?..
+?먮꼫吏 醫낅쪟蹂? 0媛?
+?⑸??댁뿭 ?섏쭛 以?..
+?⑸??댁뿭: 6嫄?
+?곗씠???섏쭛 ?꾨즺!
+
+==================================================
+=== ?뚯떛 寃곌낵 ?붿빟 ===
+==================================================
+?숉샇: 13061001
+愿由щ퉬 ??ぉ: 10媛?
+?⑸??? N/A??
+?먮꼫吏 移댄뀒怨좊━: 4媛?
+?먮꼫吏 醫낅쪟蹂? 0媛?
+?⑸??댁뿭: 6嫄?
+
+==================================================
+=== 愿由щ퉬 ?⑸????곸꽭 ===
+==================================================
+
+==================================================
+=== 愿由щ퉬 ??ぉ (泥섏쓬 3媛? ===
+==================================================
+1. ?쇰컲愿由щ퉬
+   ?뱀썡: 49950??
+   ?꾩썡: 49780??
+   利앷컧: 170??
+2. 泥?냼鍮?
+   ?뱀썡: 29080??
+   ?꾩썡: 29530??
+   利앷컧: -450??
+3. ?뚮룆鍮?
+   ?뱀썡: 770??
+   ?꾩썡: 770??
+   利앷컧: 0??
+
+==================================================
+=== ?먮꼫吏 移댄뀒怨좊━ ===
+==================================================
+醫낅쪟: ?꾧린
+  ?ъ슜?? 232.00
+  ?붽툑: 35010??
+  ?꾩썡?鍮? ?곕━吏묒씠 ?됯퇏 ?붽툑蹂대떎 21,234???곴쾶 ?ъ슜?덉뒿?덈떎.
+醫낅쪟: ?⑥닔
+  ?ъ슜?? 5.00
+  ?붽툑: 20900??
+  ?꾩썡?鍮? ?곕━吏묒씠 ?됯퇏 ?붽툑蹂대떎 5,401???곴쾶 ?ъ슜?덉뒿?덈떎.
+醫낅쪟: ?섎룄
+  ?ъ슜?? 14.00
+  ?붽툑: 22480??
+  ?꾩썡?鍮? ?곕━吏묒씠 ?됯퇏 ?붽툑蹂대떎 4,424???곴쾶 ?ъ슜?덉뒿?덈떎.
+醫낅쪟: ?쒕갑
+  ?ъ슜?? 0.68
+  ?붽툑: 76380??
+  ?꾩썡?鍮? ?곕━吏묒씠 ?됯퇏 ?붽툑蹂대떎 28,477??留롮씠 ?ъ슜?덉뒿?덈떎.
+
+==================================================
+=== ?꾩껜 ?곗씠??(JSON) ===
+==================================================
+{
+  "timestamp": "2026-01-19T12:18:49.314330",
+  "dong_ho": "13061001",
+  "maint_items": [
+    {
+      "item": "?쇰컲愿由щ퉬",
+      "current": "49950",
+      "previous": "49780",
+      "change": "170"
+    },
+    {
+      "item": "泥?냼鍮?,
+      "current": "29080",
+      "previous": "29530",
+      "change": "-450"
+    },
+    {
+      "item": "?뚮룆鍮?,
+      "current": "770",
+      "previous": "770",
+      "change": "0"
+    },
+    {
+      "item": "?밴컯湲곗쑀吏鍮?,
+      "current": "2860",
+      "previous": "2860",
+      "change": "0"
+    },
+    {
+      "item": "?섏꽑?좎?鍮?,
+      "current": "5010",
+      "previous": "4980",
+      "change": "30"
+    },
+    {
+      "item": "?κ린?섏꽑異⑸떦湲?,
+      "current": "13480",
+      "previous": "13480",
+      "change": "0"
+    },
+    {
+      "item": "二쇱감鍮?,
+      "current": "10000",
+      "previous": "10000",
+      "change": "0"
+    },
+    {
+      "item": "寃쎈퉬鍮?,
+      "current": "22710",
+      "previous": "22960",
+      "change": "-250"
+    },
+    {
+      "item": "蹂댄뿕猷?,
+      "current": "2260",
+      "previous": "2260",
+      "change": "0"
+    },
+    {
+      "item": "?꾪긽愿由ъ닔?섎즺",
+      "current": "870",
+      "previous": "870",
+      "change": "0"
+    }
+  ],
+  "maint_payment": {},
+  "energy_category": [
+    {
+      "type": "?꾧린",
+      "usage": "232.00",
+      "cost": "35010",
+      "comparison": "?곕━吏묒씠 ?됯퇏 ?붽툑蹂대떎 21,234???곴쾶 ?ъ슜?덉뒿?덈떎."
+    },
+    {
+      "type": "?⑥닔",
+      "usage": "5.00",
+      "cost": "20900",
+      "comparison": "?곕━吏묒씠 ?됯퇏 ?붽툑蹂대떎 5,401???곴쾶 ?ъ슜?덉뒿?덈떎."
+    },
+    {
+      "type": "?섎룄",
+      "usage": "14.00",
+      "cost": "22480",
+      "comparison": "?곕━吏묒씠 ?됯퇏 ?붽툑蹂대떎 4,424???곴쾶 ?ъ슜?덉뒿?덈떎."
+    },
+    {
+      "type": "?쒕갑",
+      "usage": "0.68",
+      "cost": "76380",
+      "comparison": "?곕━吏묒씠 ?됯퇏 ?붽툑蹂대떎 28,477??留롮씠 ?ъ슜?덉뒿?덈떎."
+    }
+  ],
+  "energy_type": [],
+  "payment_history": [
+    {
+      "date": "2025.12.24",
+      "amount": "347220",
+      "billing_month": "2025.11",
+      "deadline": "2025.12.31",
+      "bank": "?꾨?移대뱶",
+      "method": "?좎슜移대뱶?먮룞?댁껜",
+      "status": "?⑸??꾨즺"
+    },
+    {
+      "date": "2025.11.25",
+      "amount": "288410",
+      "billing_month": "2025.10",
+      "deadline": "2025.12.01",
+      "bank": "?꾨?移대뱶",
+      "method": "?좎슜移대뱶?먮룞?댁껜",
+      "status": "?⑸??꾨즺"
+    },
+    {
+      "date": "2025.10.27",
+      "amount": "285500",
+      "billing_month": "2025.09",
+      "deadline": "2025.10.31",
+      "bank": "?꾨?移대뱶",
+      "method": "?좎슜移대뱶?먮룞?댁껜",
+      "status": "?⑸??꾨즺"
+    },
+    {
+      "date": "2025.09.24",
+      "amount": "215710",
+      "billing_month": "2025.08",
+      "deadline": "2025.09.30",
+      "bank": "?꾨?移대뱶",
+      "method": "?좎슜移대뱶?먮룞?댁껜",
+      "status": "?⑸??꾨즺"
+    },
+    {
+      "date": "2025.08.26",
+      "amount": "285100",
+      "billing_month": "2025.07",
+      "deadline": "2025.09.01",
+      "bank": "?꾨?移대뱶",
+      "method": "?좎슜移대뱶?먮룞?댁껜",
+      "status": "?⑸??꾨즺"
+    },
+    {
+      "date": "2025.07.25",
+      "amount": "305700",
+      "billing_month": "2025.06",
+      "deadline": "2025.07.31",
+      "bank": "?꾨?移대뱶",
+      "method": "?좎슜移대뱶?먮룞?댁껜",
+      "status": "?⑸??꾨즺"
+    }
+  ]
+}
+
+==================================================
+[寃쎄퀬] 鍮꾧탳 ?곗씠?곌? ?섏쭛?섏? ?딆븯?듬땲??
+==================================================
+?ㅼ젣 ?섏씠吏??HTML 援ъ“瑜??뺤씤?섏뿬 ?좏깮?먮? 議곗젙?댁빞 ?????덉뒿?덈떎.

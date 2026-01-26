@@ -1,0 +1,159 @@
+{
+  "timestamp": "2026-01-19T13:09:22.206384",
+  "dong_ho": "13061001",
+  "maint_items": [
+    {
+      "item": "일반관리비",
+      "current": "49950",
+      "previous": "49780",
+      "change": "170"
+    },
+    {
+      "item": "청소비",
+      "current": "29080",
+      "previous": "29530",
+      "change": "-450"
+    },
+    {
+      "item": "소독비",
+      "current": "770",
+      "previous": "770",
+      "change": "0"
+    },
+    {
+      "item": "승강기유지비",
+      "current": "2860",
+      "previous": "2860",
+      "change": "0"
+    },
+    {
+      "item": "수선유지비",
+      "current": "5010",
+      "previous": "4980",
+      "change": "30"
+    },
+    {
+      "item": "장기수선충당금",
+      "current": "13480",
+      "previous": "13480",
+      "change": "0"
+    },
+    {
+      "item": "주차비",
+      "current": "10000",
+      "previous": "10000",
+      "change": "0"
+    },
+    {
+      "item": "경비비",
+      "current": "22710",
+      "previous": "22960",
+      "change": "-250"
+    },
+    {
+      "item": "보험료",
+      "current": "2260",
+      "previous": "2260",
+      "change": "0"
+    },
+    {
+      "item": "위탁관리수수료",
+      "current": "870",
+      "previous": "870",
+      "change": "0"
+    }
+  ],
+  "maint_payment": {
+    "amount": "347220",
+    "charged": "347220",
+    "month": "11",
+    "deadline": "2025년 12월 31일",
+    "status": "납기후",
+    "comparison": {
+      "previous_year": "347220"
+    }
+  },
+  "energy_category": [
+    {
+      "type": "전기",
+      "usage": "232.00",
+      "cost": "35010",
+      "comparison": "우리집이 평균 요금보다 21,234원 적게 사용했습니다."
+    },
+    {
+      "type": "온수",
+      "usage": "5.00",
+      "cost": "20900",
+      "comparison": "우리집이 평균 요금보다 5,401원 적게 사용했습니다."
+    },
+    {
+      "type": "수도",
+      "usage": "14.00",
+      "cost": "22480",
+      "comparison": "우리집이 평균 요금보다 4,424원 적게 사용했습니다."
+    },
+    {
+      "type": "난방",
+      "usage": "0.68",
+      "cost": "76380",
+      "comparison": "우리집이 평균 요금보다 28,477원 많이 사용했습니다."
+    }
+  ],
+  "energy_type": [],
+  "payment_history": [
+    {
+      "date": "2025.12.24",
+      "amount": "347220",
+      "billing_month": "2025.11",
+      "deadline": "2025.12.31",
+      "bank": "현대카드",
+      "method": "신용카드자동이체",
+      "status": "납부완료"
+    },
+    {
+      "date": "2025.11.25",
+      "amount": "288410",
+      "billing_month": "2025.10",
+      "deadline": "2025.12.01",
+      "bank": "현대카드",
+      "method": "신용카드자동이체",
+      "status": "납부완료"
+    },
+    {
+      "date": "2025.10.27",
+      "amount": "285500",
+      "billing_month": "2025.09",
+      "deadline": "2025.10.31",
+      "bank": "현대카드",
+      "method": "신용카드자동이체",
+      "status": "납부완료"
+    },
+    {
+      "date": "2025.09.24",
+      "amount": "215710",
+      "billing_month": "2025.08",
+      "deadline": "2025.09.30",
+      "bank": "현대카드",
+      "method": "신용카드자동이체",
+      "status": "납부완료"
+    },
+    {
+      "date": "2025.08.26",
+      "amount": "285100",
+      "billing_month": "2025.07",
+      "deadline": "2025.09.01",
+      "bank": "현대카드",
+      "method": "신용카드자동이체",
+      "status": "납부완료"
+    },
+    {
+      "date": "2025.07.25",
+      "amount": "305700",
+      "billing_month": "2025.06",
+      "deadline": "2025.07.31",
+      "bank": "현대카드",
+      "method": "신용카드자동이체",
+      "status": "납부완료"
+    }
+  ]
+}
