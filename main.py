@@ -48,7 +48,6 @@ async def main():
     # 연도 추정
     timestamp = data.get("timestamp", datetime.now().isoformat())
     try:
-        from datetime import datetime
         date_obj = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
     except:
         date_obj = datetime.now()
